@@ -98,7 +98,7 @@ $secret = $app->option('secret');
 ```
 
 ### Utility Functions
-There are several utility routines in the library as well:
+There are several utility routines in the library:
 
 ```php
 <?php
