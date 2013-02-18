@@ -35,6 +35,7 @@ $app->get('/', function()  use ($app) {
 $app->listen();
 
 ?>
+```
 
 ### Route Symbol Filters
 This is taken from ExpressJS. Route filters let you map functions against symbols in your routes. These functions then get executed when those symbols are matched.
