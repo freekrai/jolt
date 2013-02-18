@@ -46,14 +46,14 @@ This is taken from ExpressJS. Route filters let you map functions against symbol
 ```php
 <?php
 // preload blog entry whenever a matching route has :blog_id in it
-$app->filter('blog_id', function ($blog_id) {
+$app->filter('blog_id', function ($blog_id) use ($app) {
 	$blog = Blog::findOne($blog_id);
 	// store() lets you store stuff for later use (NOT a cache)
 	$app->store('blog', $blog);
 });
 
 // here, we have :blog_id in the route, so our preloader gets run
-$app->get('/blogs/:blog_id', function ($blog_id) {
+$app->get('/blogs/:blog_id', function ($blog_id) use ($app)  {
 	// pick up what we got from the stash
 	$blog = $app->store('blog');
 	$app->render('single', array('blog' => $blog);
@@ -62,17 +62,17 @@ $app->get('/blogs/:blog_id', function ($blog_id) {
 ```
 
 ### Conditions
-Conditions are basically helper functions. I adopted the name 'conditions' so as to encourage you to use it at the start of your handlers.
+Conditions are basically helper functions.
 
 ```php
 <?php
 // require that users are signed in
-$app->condition('signed_in', function () {
+$app->condition('signed_in', function () use ($app) {
   $app->redirect(403, '/403-forbidden', !$app->store('user'));
 });
 
 // require a valid token when accessing a page
-$app->get('/admin', function () {
+$app->get('/admin', function () use ($app)  {
   $app->condition('signed_in');
   $app->render('admin');
 });
