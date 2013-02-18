@@ -25,7 +25,10 @@ $app = new Jolt('my app');
 // define your routes
 $app->get('/greet', function () use ($app){
 	// render a view
-	$app->render('greet-form');
+	$app->render( 'page', array(
+		"pageTitle"=>"Greetings",
+		"body"=>"Greetings world!"
+	));
 });
 
 $app->get('/', function()  use ($app) {
