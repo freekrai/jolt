@@ -7,7 +7,7 @@ Jolt takes some inspiration from ExpressJS.
 
 Jolt is not a full featured MVC framework, it is built to be a micro framework that handles routing and carries some basic template rendering. Feel free to use your own template engine such as Twig instead.
 
-For database, I recommend [http://j4mie.github.com/idiormandparis/](Idiorm and Paris)
+For database, I recommend [Idiorm and Paris](http://j4mie.github.com/idiormandparis/)
 
 ### Requirements
 * PHP 5.3
