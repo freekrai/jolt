@@ -81,8 +81,8 @@ $app->get('/admin', function () use ($app)  {
 *NOTE:* Because of the way conditions are defined, conditions can't have anonymous functions as their first parameter.
 
 ### Configurations
-You can make use of ini files for configuration by doing something like `config('source', 'myconfig.ini')`.
-This lets you put configuration settings in ini files instead of making `config()` calls in your code.
+You can make use of ini files for configuration by doing something like `option('source', 'myconfig.ini')`.
+This lets you put configuration settings in ini files instead of making `option()` calls in your code.
 
 ```php
 <?php
@@ -98,7 +98,7 @@ $secret = $app->option('secret');
 ```
 
 ### Utility Functions
-There are a lot of other useful routines in the library. Documentation is still lacking but they're very small and easy to figure out. Read the source for now.
+There are several utility routines in the library as well:
 
 ```php
 <?php
