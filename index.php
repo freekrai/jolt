@@ -30,6 +30,12 @@ $app->get('/greet', function() use ($app){
 		"body"=>"Greetings world!"
 	));
 });
+$app->post('/greet', function() use ($app){
+	$app->render( 'page', array(
+		"pageTitle"=>"Greetings ".$_POST['name']."!",
+		"body"=>"Greetings ".$_POST['name']."!"
+	));
+});
 $app->get('/', function() use ($app){
 	$app->render( 'home' );
 });

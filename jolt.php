@@ -17,7 +17,7 @@ class Jolt{
 		}	
 		$this->router();
 	}
-	public function add_route($method = 'GET',$pattern,$cb = null){
+	private function add_route($method = 'GET',$pattern,$cb = null){
 		$method = strtoupper($method);
 		if (!in_array($method, array('GET', 'POST')))
 			error(500, 'Only GET and POST are supported');
@@ -56,21 +56,25 @@ class Jolt{
 			}
 		}
 	}
-	function route_to_regex($route) {
+	private function route_to_regex($route) {
 		$route = preg_replace_callback('@:[\w]+@i', function ($matches) {
 			$token = str_replace(':', '', $matches[0]);
 			return '(?P<'.$token.'>[a-z0-9_\0-\.]+)';
 		}, $route);
 		return '@^'.rtrim($route, '/').'$@i';
 	}
-	public function route($pattern,$cb = null){
+	public function route($pattern,$cb = null){	//	doesn't care about GET or POST...
 		return $this->add_route('GET',$pattern,$cb);
 	}
 	public function get($pattern,$cb = null){
-		return $this->add_route('GET',$pattern,$cb);
+		if( $this->method('GET') ){	//	only process during GET
+			return $this->add_route('GET',$pattern,$cb);
+		}
 	}
 	public function post($pattern,$cb = null){
-		return $this->add_route('GET',$pattern,$cb);
+		if( $this->method('POST') ){	//	only process during POST
+			return $this->add_route('GET',$pattern,$cb);
+		}
 	}
 	public function req($key){
 		return $_REQUEST[$key];
@@ -111,7 +115,7 @@ class Jolt{
 		header('Location: '.$path, true, $code);
 		exit;
 	}
-	function option($key, $value = null) {
+	public function option($key, $value = null) {
 		static $_option = array();
 		if ($key === 'source' && file_exists($value))
 			$_option = parse_ini_file($value, true);
@@ -120,11 +124,11 @@ class Jolt{
 		else
 			$_option[$key] = $value;
 	}
-	function error($code, $message) {
+	public function error($code, $message) {
 		@header("HTTP/1.0 {$code} {$message}", true, $code);
 		die($message);
 	}
-	function warn($name = null, $message = null) {
+	public function warn($name = null, $message = null) {
 		static $warnings = array();
 		if ($name == '*')
 			return $warnings;
@@ -134,7 +138,7 @@ class Jolt{
 			return isset($warnings[$name]) ? $warnings[$name] : null ;
 		$warnings[$name] = $message;
 	}
-	function from($source, $name) {
+	public function from($source, $name) {
 		if (is_array($name)) {
 			$data = array();
 			foreach ($name as $k)
@@ -143,20 +147,20 @@ class Jolt{
 		}
 		return isset($source[$name]) ? $source[$name] : null ;
 	}
-	function store($name, $value = null) {
+	public function store($name, $value = null) {
 		static $_store = array();
 		if ($value === null)
 			return isset($_store[$name]) ? $_store[$name] : null;
 		$_store[$name] = $value;
 		return $value;
 	}
-	function method($verb = null) {
+	public function method($verb = null) {
 		if ($verb == null || (strtoupper($verb) == strtoupper($_SERVER['REQUEST_METHOD'])))
-		return strtoupper($_SERVER['REQUEST_METHOD']);
-		
-		$this->error(400, 'bad request');
+			return strtoupper($_SERVER['REQUEST_METHOD']);
+		return false;
+#		$this->error(400, 'bad request');
 	}		
-	function client_ip() {
+	public function client_ip() {
 		if (isset($_SERVER['HTTP_CLIENT_IP']))
 			return $_SERVER['HTTP_CLIENT_IP'];
 		else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
@@ -164,7 +168,7 @@ class Jolt{
 		return $_SERVER['REMOTE_ADDR'];
 	}
 	
-	function partial($view, $locals = null) {
+	public function partial($view, $locals = null) {
 		if (is_array($locals) && count($locals)) {
 			extract($locals, EXTR_SKIP);
 		}		
@@ -182,10 +186,10 @@ class Jolt{
 		}		
 		return '';
 	}
-	function content($value = null) {
+	public function content($value = null) {
 		return $this->store('$content$', $value);
 	}	
-	function render($view, $locals = null, $layout = null) {
+	public function render($view, $locals = null, $layout = null) {
 		if (is_array($locals) && count($locals)) {
 			extract($locals, EXTR_SKIP);
 		}
@@ -210,13 +214,13 @@ class Jolt{
 			echo $this->content();
 		}
 	}
-	function json($obj, $code = 200) {
+	public function json($obj, $code = 200) {
 		//	output a json stream
 		header('Content-type: application/json', true, $code);
 		echo json_encode($obj);
 		exit;
 	}
-	function condition() {
+	public function condition() {
 		static $cb_map = array();		
 		$argv = func_get_args();
 		$argc = count($argv);		
@@ -232,7 +236,7 @@ class Jolt{
 			return call_user_func_array($cb_map[$name], $argv);		
 		$this->error(500, 'condition ['.$name.'] is undefined');
 	}
-	function middleware($cb_or_path = null) {	
+	public function middleware($cb_or_path = null) {	
 		static $cb_map = array();
 		if ($cb_or_path == null || is_string($cb_or_path)) {
 			foreach ($cb_map as $cb) {
@@ -242,7 +246,7 @@ class Jolt{
 			array_push($cb_map, $cb_or_path);
 		}
 	}
-	function filter($sym, $cb_or_val = null) {
+	public function filter($sym, $cb_or_val = null) {
 		static $cb_map = array();
 		if (is_callable($cb_or_val)) {
 			$cb_map[$sym] = $cb_or_val;
