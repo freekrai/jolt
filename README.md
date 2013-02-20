@@ -109,6 +109,31 @@ There are several utility routines in the library:
 
 ```php
 <?php
+//set a route that doesn't care about GET or POST
+$app->route('/rule',function() use ($app){
+	
+});
+//set a route that only works during GET queries
+$app->get('/rule',function() use ($app){
+	
+});
+//set a route that only works during POST queries
+$app->post('/rule',function() use ($app){
+	
+});
+
+//render html with no variables, and use layout.html
+$app->render('view');
+
+//render html with variables, stay with standard layout
+$app->render('view',array("var1"=>"val1"));
+
+//render html with no variables and a different layout (layout2.html)
+$app->render('view',null,"layout2");
+
+//render html with variables and a different layout (layout2.html)
+$app->render('view',array("var1"=>"val1"),"layout2");
+
 // store a setting and get it
 $app->option('views', './views');
 $app->option('views'); // returns './views'
