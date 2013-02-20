@@ -3,6 +3,9 @@
 class Jolt{
 	public $name;
 	public $debug = false;
+	public $notFound;
+	protected static $baseUri;
+	protected static $uri;
 	private $route_map = array(
 		'GET' => array(),
 		'POST' => array()
@@ -55,6 +58,7 @@ class Jolt{
 				return;
 			}
 		}
+		$this->notFound();
 	}
 	private function route_to_regex($route) {
 		$route = preg_replace_callback('@:[\w]+@i', function ($matches) {
@@ -62,6 +66,26 @@ class Jolt{
 			return '(?P<'.$token.'>[a-z0-9_\0-\.]+)';
 		}, $route);
 		return '@^'.rtrim($route, '/').'$@i';
+	}
+	private function got404( $callable = null ) {
+		if ( is_callable($callable) ) {
+			$this->notFound = $callable;
+		}
+		return $this->notFound;
+	}
+	public function notFound( $callable = null ) {
+		if ( !is_null($callable) ) {
+			$this->got404($callable);
+		} else {
+			ob_start();
+			$customNotFoundHandler = $this->got404();
+			if ( is_callable($customNotFoundHandler) ) {
+				call_user_func($customNotFoundHandler);
+			} else {
+				call_user_func(array($this, 'defaultNotFound'));
+			}
+			$this->error(404, ob_get_clean());
+		}
 	}
 	public function route($pattern,$cb = null){	//	doesn't care about GET or POST...
 		return $this->add_route('GET',$pattern,$cb);
@@ -262,4 +286,71 @@ class Jolt{
 		}
 		$this->error(500, 'bad call to filter()');
 	}	
+
+	public function set_cookie($name, $value, $expire = 31536000, $path = '/') {
+		setcookie($name, $value, time() + $expire, $path);
+	}
+	public function get_cookie($name) {
+		$value = $this->from($_COOKIE, $name);
+		if ($value)
+			return $value;
+	}
+	public function delete_cookie() {
+		$cookies = func_get_args();
+		foreach ($cookies as $ck)
+			setcookie($ck, '', -10, '/');
+	}
+	public function flash($key, $msg = null, $now = false) {
+		static $x = array(),
+		$f = null;
+		$f = ( $this->option('cookies.flash') ? $this->option('cookies.flash') : '_F');
+		if ($c = $this->get_cookie($f))
+			$c = json_decode($c, true);
+		else
+			$c = array();
+		if ($msg == null) {
+			if (isset($c[$key])) {
+				$x[$key] = $c[$key];
+				unset($c[$key]);
+				$this->set_cookie($f, json_encode($c));
+			}
+			return (isset($x[$key]) ? $x[$key] : null);
+		}
+		if (!$now) {
+			$c[$key] = $msg;
+			$this->set_cookie($f, json_encode($c));
+		}
+		$x[$key] = $msg;
+	}
+
+	public static function getBaseUri( $reload = false ) {
+		if ( $reload || is_null(self::$baseUri) ) {
+			$requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF']; //Full Request URI
+			$scriptName = $_SERVER['SCRIPT_NAME']; //Script path from docroot
+			$baseUri = strpos($requestUri, $scriptName) === 0 ? $scriptName : str_replace('\\', '/', dirname($scriptName));
+			self::$baseUri = rtrim($baseUri, '/');
+		}
+		return self::$baseUri;
+	}
+	protected static function generateErrorMarkup( $message, $file = '', $line = '', $trace = '' ) {
+		$body = '<p>The application could not run because of the following error:</p>';
+		$body .= "<h2>Details:</h2><strong>Message:</strong> $message<br/>";
+		if ( $file !== '' ) $body .= "<strong>File:</strong> $file<br/>";
+		if ( $line !== '' ) $body .= "<strong>Line:</strong> $line<br/>";
+		if ( $trace !== '' ) $body .= '<h2>Stack Trace:</h2>' . nl2br($trace);
+		return self::generateTemplateMarkup('Jolt Application Error', $body);
+	}
+	protected static function generateTemplateMarkup( $title, $body ) {
+		$html = "<html><head><title>$title</title><style>body{margin:0;padding:30px;font:12px/1.5 Helvetica,Arial,Verdana,sans-serif;}h1{margin:0;font-size:48px;font-weight:normal;line-height:48px;}strong{display:inline-block;width:65px;}</style></head><body>";
+		$html .= "<h1>$title</h1>";
+		$html .= $body;
+		$html .= '</body></html>';
+		return $html;
+	}
+	protected function defaultNotFound() {
+		echo self::generateTemplateMarkup('404 Page Not Found', '<p>The page you are looking for could not be found. Check the address bar to ensure your URL is spelled correctly. If all else fails, you can visit our home page at the link below.</p><a href="' . $this->getBaseUri() . '">Visit the Home Page</a>');
+	}
+	protected function defaultError() {
+		echo self::generateTemplateMarkup('Error', '<p>A website error has occured. The website administrator has been notified of the issue. Sorry for the temporary inconvenience.</p>');
+	}
 }
