@@ -10,6 +10,7 @@ class Jolt{
 		'GET' => array(),
 		'POST' => array()
 	);
+	
 	public function __construct($name='',$debug = false){
 		$this->name = $name;
 		$this->debug = false;
