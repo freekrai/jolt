@@ -1,5 +1,5 @@
 <?php
-
+session_start();
 class Jolt{
 	public $name;
 	public $debug = false;
@@ -104,6 +104,9 @@ class Jolt{
 	public function req($key){
 		return $_REQUEST[$key];
 	}
+	public function header($str){
+		header( $str );
+	}
 	public function send($str){
 		echo $str;
 	}
@@ -174,9 +177,13 @@ class Jolt{
 	}
 	public function store($name, $value = null) {
 		static $_store = array();
+		if( empty($_store) && isset($_SESSION['_store']) ){
+			$_store = $_SESSION['_store'];
+		}
 		if ($value === null)
 			return isset($_store[$name]) ? $_store[$name] : null;
 		$_store[$name] = $value;
+		$_SESSION['_store'] = $_store;
 		return $value;
 	}
 	public function method($verb = null) {
@@ -215,6 +222,7 @@ class Jolt{
 		return $this->store('$content$', $value);
 	}	
 	public function render($view, $locals = null, $layout = null) {
+		$locals['uri'] = $this->getBaseUri();
 		if (is_array($locals) && count($locals)) {
 			extract($locals, EXTR_SKIP);
 		}
