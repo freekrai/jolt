@@ -6,7 +6,6 @@ class Jolt{
 	public $notFound;
 	private $pattern;
 	private $params = array();
-	private $conditions = array();
 	protected static $scheme;
 	protected static $baseUri;
 	protected static $uri;
@@ -72,6 +71,7 @@ class Jolt{
 	}
 
 	public function matches( $resourceUri ) {
+#		echo $this->pattern."<br />";
 		preg_match_all('@:([\w]+)@', $this->pattern, $paramNames, PREG_PATTERN_ORDER);
 		$paramNames = $paramNames[0];
 		$patternAsRegex = preg_replace_callback('@:[\w]+@', array($this, 'convertPatternToRegex'), $this->pattern);
@@ -79,6 +79,8 @@ class Jolt{
 			$patternAsRegex = $patternAsRegex . '?';
 		}
 		$patternAsRegex = '@^' . $patternAsRegex . '$@';
+#		echo $patternAsRegex;
+#		echo "<hr />";
 		if ( preg_match($patternAsRegex, $resourceUri, $paramValues) ) {
 			array_shift($paramValues);
 			foreach ( $paramNames as $index => $value ) {
@@ -94,15 +96,7 @@ class Jolt{
 	}
 	protected function convertPatternToRegex( $matches ) {
 		$key = str_replace(':', '', $matches[0]);
-		if ( array_key_exists($key, $this->conditions) ) {
-			return '(?P<' . $key . '>' . $this->conditions[$key] . ')';
-		} else {
-			return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
-		}
-	}
-	public function conditions( array $conditions ) {
-		$this->conditions = array_merge($this->conditions, $conditions);
-		return $this;
+		return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
 	}
 	private function got404( $callable = null ) {
 		if ( is_callable($callable) ) {
