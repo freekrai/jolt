@@ -4,8 +4,13 @@ class Jolt{
 	public $name;
 	public $debug = false;
 	public $notFound;
+	private $pattern;
+	private $params = array();
+	private $conditions = array();
+	protected static $scheme;
 	protected static $baseUri;
 	protected static $uri;
+	protected static $queryString;
 	private $route_map = array(
 		'GET' => array(),
 		'POST' => array()
@@ -25,6 +30,7 @@ class Jolt{
 		$method = strtoupper($method);
 		if (!in_array($method, array('GET', 'POST')))
 			error(500, 'Only GET and POST are supported');
+		$pattern = str_replace(")",")?",$pattern);	//	add ? to the end of each closing bracket..
 		$this->route_map[$method][$pattern] = array(
 			'xp' => $this->route_to_regex($pattern),
 			'cb' => $cb
@@ -33,30 +39,26 @@ class Jolt{
 	private function router(){
 		$route_map = $this->route_map;
 		foreach ($route_map['GET'] as $pat => $obj) {
+			$this->pattern = $pat;
 			foreach($_GET as $k=>$v){
-				if( $obj['xp'] == '@^$@i')	$obj['xp'] = '@^/$@i';	//	covers home page
-#				echo $k.' --- '.$v.' --- '.$obj['xp'].'<br />';
-				$pattern = $v;
-				if (!preg_match($obj['xp'], $v, $vals))	continue;
-				$this->middleware($pattern);
-				array_shift($vals);
-				preg_match_all('@:([\w]+)@', $pat, $keys, PREG_PATTERN_ORDER);
-				$keys = array_shift($keys);
-				$argv = array();				
-				foreach ($keys as $index => $id) {
-					$id = substr($id, 1);
-					if (isset($vals[$id])) {
-						array_push($argv, trim(urldecode($vals[$id])));
+				if( $this->matches( $this->getUri() ) ){
+					$vals = $this->params;
+					$this->middleware($vals);
+					$keys = array_keys( $vals );
+					$argv = array();
+					foreach ($keys as $index => $id) {
+						if (isset($vals[$id])) {
+							array_push($argv, trim(urldecode($vals[$id])));
+						}
 					}
+					if (count($keys)) {
+						$this->filter( array_values($keys), $vals );
+					}
+					if (is_callable($obj['cb'])) {
+						call_user_func_array($obj['cb'], $argv);
+					}
+					return;
 				}
-				if (count($keys)) {
-					$this->filter( array_values($keys), $vals );
-				}
-				if (is_callable($obj['cb'])) {
-					call_user_func_array($obj['cb'], $argv);
-				}
-#				exit;
-				return;
 			}
 		}
 		$this->notFound();
@@ -67,6 +69,40 @@ class Jolt{
 			return '(?P<'.$token.'>[a-z0-9_\0-\.]+)';
 		}, $route);
 		return '@^'.rtrim($route, '/').'$@i';
+	}
+
+	public function matches( $resourceUri ) {
+		preg_match_all('@:([\w]+)@', $this->pattern, $paramNames, PREG_PATTERN_ORDER);
+		$paramNames = $paramNames[0];
+		$patternAsRegex = preg_replace_callback('@:[\w]+@', array($this, 'convertPatternToRegex'), $this->pattern);
+		if ( substr($this->pattern, -1) === '/' ) {
+			$patternAsRegex = $patternAsRegex . '?';
+		}
+		$patternAsRegex = '@^' . $patternAsRegex . '$@';
+		if ( preg_match($patternAsRegex, $resourceUri, $paramValues) ) {
+			array_shift($paramValues);
+			foreach ( $paramNames as $index => $value ) {
+				$val = substr($value, 1);
+				if ( isset($paramValues[$val]) ) {
+					$this->params[$val] = urldecode($paramValues[$val]);
+				}
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
+	protected function convertPatternToRegex( $matches ) {
+		$key = str_replace(':', '', $matches[0]);
+		if ( array_key_exists($key, $this->conditions) ) {
+			return '(?P<' . $key . '>' . $this->conditions[$key] . ')';
+		} else {
+			return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
+		}
+	}
+	public function conditions( array $conditions ) {
+		$this->conditions = array_merge($this->conditions, $conditions);
+		return $this;
 	}
 	private function got404( $callable = null ) {
 		if ( is_callable($callable) ) {
@@ -118,18 +154,18 @@ class Jolt{
 		$cond = true;
 		switch ($argc) {
 			case 3:
-			list($code, $path, $cond) = $argv;
-			break;
+				list($code, $path, $cond) = $argv;
+				break;
 			case 2:
-			if (is_string($argv[0]) ? $argv[0] : $argv[1]) {
-			$code = 302;
-			$path = $argv[0];
-			$cond = $argv[1];
-			} else {
-			$code = $argv[0];
-			$path = $argv[1];
-			}
-			break;
+				if (is_string($argv[0]) ? $argv[0] : $argv[1]) {
+					$code = 302;
+					$path = $argv[0];
+					$cond = $argv[1];
+				} else {
+					$code = $argv[0];
+					$path = $argv[1];
+				}
+				break;
 			case 1:
 				if (!is_string($argv[0]))
 					$this->error(500, 'bad call to redirect()');
@@ -190,7 +226,6 @@ class Jolt{
 		if ($verb == null || (strtoupper($verb) == strtoupper($_SERVER['REQUEST_METHOD'])))
 			return strtoupper($_SERVER['REQUEST_METHOD']);
 		return false;
-#		$this->error(400, 'bad request');
 	}		
 	public function client_ip() {
 		if (isset($_SERVER['HTTP_CLIENT_IP']))
@@ -287,9 +322,12 @@ class Jolt{
 		}
 		if (is_array($sym) && count($sym) > 0) {
 			foreach ($sym as $s) {
-				$s = substr($s, 1);
-				if (isset($cb_map[$s]) && isset($cb_or_val[$s]))
-				call_user_func($cb_map[$s], $cb_or_val[$s]);
+				if( $s[0] == ":" ){
+					$s = substr($s, 1);
+				}
+				if (isset($cb_map[$s]) && isset($cb_or_val[$s])){
+					call_user_func($cb_map[$s], $cb_or_val[$s]);
+				}
 			}
 			return;
 		}
@@ -340,6 +378,39 @@ class Jolt{
 			self::$baseUri = rtrim($baseUri, '/');
 		}
 		return self::$baseUri;
+	}
+	public static function getUri( $reload = false ) {
+		if ( $reload || is_null(self::$uri) ) {
+			$uri = '';
+			if ( !empty($_SERVER['PATH_INFO']) ) {
+				$uri = $_SERVER['PATH_INFO'];
+			} else {
+				if ( isset($_SERVER['REQUEST_URI']) ) {
+					$uri = parse_url(self::getScheme() . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], PHP_URL_PATH);
+				} else if ( isset($_SERVER['PHP_SELF']) ) {
+					$uri = $_SERVER['PHP_SELF'];
+				} else {
+					$this->error(500, 'Unable to detect request URI');
+				}
+			}
+			if ( self::getBaseUri() !== '' && strpos($uri, self::getBaseUri()) === 0 ) {
+				$uri = substr($uri, strlen(self::getBaseUri()));
+			}
+			self::$uri = '/' . ltrim($uri, '/');
+		}
+		return self::$uri;
+	}
+	public static function getScheme( $reload = false ) {
+		if ( $reload || is_null(self::$scheme) ) {
+			self::$scheme = ( empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' ) ? 'http' : 'https';
+		}
+		return self::$scheme;
+	}
+	public static function getQueryString( $reload = false ) {
+		if ( $reload || is_null(self::$queryString) ) {
+			self::$queryString = $_SERVER['QUERY_STRING'];
+		}
+		return self::$queryString;
 	}
 	protected static function generateErrorMarkup( $message, $file = '', $line = '', $trace = '' ) {
 		$body = '<p>The application could not run because of the following error:</p>';
