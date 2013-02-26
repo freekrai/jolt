@@ -6,6 +6,8 @@ class Jolt{
 	public $notFound;
 	private $pattern;
 	private $params = array();
+	protected $conditions = array();
+	protected static $defaultConditions = array();
 	protected static $scheme;
 	protected static $baseUri;
 	protected static $uri;
@@ -25,20 +27,24 @@ class Jolt{
 		}	
 		$this->router();
 	}
-	private function add_route($method = 'GET',$pattern,$cb = null){
+	private function add_route($method = 'GET',$pattern,$cb = null,$conditions = null){
 		$method = strtoupper($method);
 		if (!in_array($method, array('GET', 'POST')))
 			error(500, 'Only GET and POST are supported');
 		$pattern = str_replace(")",")?",$pattern);	//	add ? to the end of each closing bracket..
 		$this->route_map[$method][$pattern] = array(
 			'xp' => $this->route_to_regex($pattern),
-			'cb' => $cb
+			'cb' => $cb,
+			'conditions'=>$conditions
 		);
 	}
 	private function router(){
 		$route_map = $this->route_map;
 		foreach ($route_map['GET'] as $pat => $obj) {
 			$this->pattern = $pat;
+			if( isset($obj['conditions']) && !is_null($obj['conditions']) ){
+				$this->conditions = $obj['conditions'];
+			}
 			foreach($_GET as $k=>$v){
 				if( $this->matches( $this->getUri() ) ){
 					$vals = $this->params;
@@ -74,6 +80,8 @@ class Jolt{
 #		echo $this->pattern."<br />";
 		preg_match_all('@:([\w]+)@', $this->pattern, $paramNames, PREG_PATTERN_ORDER);
 		$paramNames = $paramNames[0];
+#	print_r($paramNames);
+#	echo "<br />";
 		$patternAsRegex = preg_replace_callback('@:[\w]+@', array($this, 'convertPatternToRegex'), $this->pattern);
 		if ( substr($this->pattern, -1) === '/' ) {
 			$patternAsRegex = $patternAsRegex . '?';
@@ -95,8 +103,14 @@ class Jolt{
 		}
 	}
 	protected function convertPatternToRegex( $matches ) {
+#		$key = str_replace(':', '', $matches[0]);
+#		return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
 		$key = str_replace(':', '', $matches[0]);
-		return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
+		if ( array_key_exists($key, $this->conditions) ) {
+			return '(?P<' . $key . '>' . $this->conditions[$key] . ')';
+		} else {
+			return '(?P<' . $key . '>[a-zA-Z0-9_\-\.\!\~\*\\\'\(\)\:\@\&\=\$\+,%]+)';
+		}
 	}
 	private function got404( $callable = null ) {
 		if ( is_callable($callable) ) {
@@ -118,17 +132,17 @@ class Jolt{
 			$this->error(404, ob_get_clean());
 		}
 	}
-	public function route($pattern,$cb = null){	//	doesn't care about GET or POST...
-		return $this->add_route('GET',$pattern,$cb);
+	public function route($pattern,$cb = null,$conditions=null){	//	doesn't care about GET or POST...
+		return $this->add_route('GET',$pattern,$cb,$conditions);
 	}
-	public function get($pattern,$cb = null){
+	public function get($pattern,$cb = null,$conditions=null){
 		if( $this->method('GET') ){	//	only process during GET
-			return $this->add_route('GET',$pattern,$cb);
+			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
-	public function post($pattern,$cb = null){
+	public function post($pattern,$cb = null,$conditions=null){
 		if( $this->method('POST') ){	//	only process during POST
-			return $this->add_route('GET',$pattern,$cb);
+			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
 	public function req($key){
@@ -237,7 +251,7 @@ class Jolt{
 			$this->error(500, "[views.root] is not set");
 		$path = basename($view);
 		$view = preg_replace('/'.$path.'$/', "_{$path}", $view);
-		$view = "{$view_root}/{$view}.html";		
+		$view = "{$view_root}/{$view}.php";		
 		if (file_exists($view)) {
 			ob_start();
 			require $view;
@@ -258,14 +272,14 @@ class Jolt{
 		if (($view_root = $this->option('views.root')) == null)
 			$this->error(500, "[views.root] is not set");
 		ob_start();
-		include "{$view_root}/{$view}.html";
+		include "{$view_root}/{$view}.php";
 		$this->content(trim(ob_get_clean()));
 		if ($layout !== false) {
 			if ($layout == null) {
 				$layout = $this->option('views.layout');
 				$layout = ($layout == null) ? 'layout' : $layout;
 			}
-			$layout = "{$view_root}/{$layout}.html";	
+			$layout = "{$view_root}/{$layout}.php";	
 			header('Content-type: text/html; charset=utf-8');
 			$pageContent = $this->content();
 			ob_start();
