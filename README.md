@@ -83,6 +83,7 @@ $app->get('/admin', function () use ($app)  {
   $app->condition('signed_in');
   $app->render('admin');
 });
+
 ?>
 ```
 *NOTE:* Because of the way conditions are defined, conditions can't have anonymous functions as their first parameter.
