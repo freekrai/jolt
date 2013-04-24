@@ -246,6 +246,11 @@ $app->client_ip();
 $name = $app->from($_POST, 'name');
 $user = $app->from($_POST, array('username', 'email', 'password'));
 
+// return URI stuff:
+$app->getBaseUri();	//	returns the current root uri.. for example /site/ if the app is installed in the /site/ folder or blank if it's at the document root..
+
+$app->getUri();	//	returns the current uri for example, /login if you are on the login page, or / if you are on the homepage..
+
 // load a partial using some file and locals
 $html = $app->partial('users/profile', array('user' => $user));
 ?>

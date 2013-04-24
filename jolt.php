@@ -276,6 +276,7 @@ class Jolt{
 	}	
 	public function render($view, $locals = null, $layout = null) {
 		$locals['uri'] = $this->getBaseUri();
+		$locals['cpage'] = $this->getUri();
 		if (is_array($locals) && count($locals)) {
 			extract($locals, EXTR_SKIP);
 		}
