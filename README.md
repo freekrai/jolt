@@ -41,16 +41,10 @@ $app->post('/greet', function () use ($app){
 $app->get('/hello/:name', function ($name) use ($app){
 	// render a view
 	$app->render( 'page', array(
-		"pageTitle"=>"Greetings",
-		"body"=>"Greetings {$name}!",
+		"pageTitle"=>"Hello",
+		"body"=>"Hello {$name}!",
 	));
 });
-
-$app->get('/test(/:param1(/:param2(/:param3(/:param4))))', function () use ($app) {
-	$args  = func_get_args();
-	print_r($args);
-});
-
 
 $app->get('/', function()  use ($app) {
 	$app->render('home');
@@ -69,6 +63,11 @@ You may also have optional route parameters. These are ideal for using one route
 <?php
 $app->get('/archives(/:yyyy(/:mm(/:dd)))', function($yyyy='',$mm='',$dd='') use ($app) {
 	echo $yyyy.' - '.$mm.' - '.$dd;
+});
+
+$app->get('/test(/:param1(/:param2(/:param3(/:param4))))', function () use ($app) {
+	$args  = func_get_args();
+	print_r($args);
 });
 
 ?>
