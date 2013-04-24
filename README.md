@@ -93,6 +93,20 @@ $app->get('/blogs/:blog_id', function ($blog_id) use ($app)  {
 ?>
 ```
 
+### Middleware
+Helper function called during routing, handy for taking care of database connections, etc.
+
+```php
+<?php
+
+$app->middleware(function () use ($app){
+	$db = create_connection();
+	$app->store('db', $db);
+});
+?>
+```
+
+
 ### Conditions
 Conditions are basically helper functions.
 
