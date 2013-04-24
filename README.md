@@ -61,14 +61,36 @@ $app->listen();
 ?>
 ```
 
-### Route conditions
-You can set the system to check the variables passed in the route to match your rules, for example:
+### Optional route parameters
+
+You may also have optional route parameters. These are ideal for using one route for a blog archive. To declare optional route parameters, specify your route pattern like this:
 
 ```php
 <?php
 $app->get('/archives(/:yyyy(/:mm(/:dd)))', function($yyyy='',$mm='',$dd='') use ($app) {
-	$args  = func_get_args();
-	print_r($args);
+	echo $yyyy.' - '.$mm.' - '.$dd;
+});
+
+?>
+```
+
+Each subsequent route segment is optional. This route will accept HTTP requests for:
+
+- /archives
+- /archives/2013
+- /archivs/2013/04
+- /archivs/2013/04/05
+
+If an optional route segment is omitted from the HTTP request, the default values in the callback signature are used instead.
+
+
+### Route conditions
+
+Jolt lets you assign conditions to route parameters. If the specified conditions are not met, the route is not run. For example, if you need a route with a second segment that must be a valid 4-digit year, you could enforce this condition like this:
+
+```php
+<?php
+$app->get('/archives(/:yyyy(/:mm(/:dd)))', function($yyyy='',$mm='',$dd='') use ($app) {
 	echo $yyyy.' - '.$mm.' - '.$dd;
 },  array(
 		'yyyy' => '(19|20)\d\d'
