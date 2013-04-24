@@ -145,6 +145,16 @@ class Jolt{
 			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
+	public function put($pattern,$cb = null,$conditions=null){
+		if( $this->method('PUT') ){	//	only process during PUT
+			return $this->add_route('GET',$pattern,$cb,$conditions);
+		}
+	}
+	public function delete($pattern,$cb = null,$conditions=null){
+		if( $this->method('DELETE') ){	//	only process during DELETE
+			return $this->add_route('GET',$pattern,$cb,$conditions);
+		}
+	}
 	public function req($key){
 		return $_REQUEST[$key];
 	}

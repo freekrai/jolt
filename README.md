@@ -75,7 +75,7 @@ Conditions are basically helper functions.
 <?php
 // require that users are signed in
 $app->condition('signed_in', function () use ($app) {
-  $app->redirect(403, '/403-forbidden', !$app->store('user'));
+	$app->redirect( '/403-forbidden',!$app->store('user'));
 });
 
 // require a valid token when accessing a page
@@ -120,6 +120,12 @@ $app->get('/rule',function() use ($app){
 });
 //set a route that only works during POST queries
 $app->post('/rule',function() use ($app){
+	
+});
+$app->put('/rule',function() use ($app){
+	
+});
+$app->delete('/rule',function() use ($app){
 	
 });
 
