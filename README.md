@@ -46,17 +46,6 @@ $app->get('/hello/:name', function ($name) use ($app){
 	));
 });
 
-$app->get('/archives(/:yyyy(/:mm(/:dd)))', function($yyyy='',$mm='',$dd='') use ($app) {
-	$args  = func_get_args();
-	print_r($args);
-	echo $yyyy.' - '.$mm.' - '.$dd;
-},  array(
-		'yyyy' => '(19|20)\d\d'
-		,'mm'=>'(0[1-9]|1[0-2])'
-		,'dd'=>'(0[1-9]|[1-2][0-9]|3[0-1])'
-	)
-);
-
 $app->get('/test(/:param1(/:param2(/:param3(/:param4))))', function () use ($app) {
 	$args  = func_get_args();
 	print_r($args);
@@ -71,6 +60,28 @@ $app->listen();
 
 ?>
 ```
+
+### Route conditions
+You can set the system to check the variables passed in the route to match your rules, for example:
+
+```php
+<?php
+$app->get('/archives(/:yyyy(/:mm(/:dd)))', function($yyyy='',$mm='',$dd='') use ($app) {
+	$args  = func_get_args();
+	print_r($args);
+	echo $yyyy.' - '.$mm.' - '.$dd;
+},  array(
+		'yyyy' => '(19|20)\d\d'
+		,'mm'=>'(0[1-9]|1[0-2])'
+		,'dd'=>'(0[1-9]|[1-2][0-9]|3[0-1])'
+	)
+);
+
+?>
+```
+
+This example, will only let the $yyyy variable match a 4 digit year, $mm match a 2 digit month, and $dd match a 2 digit day.
+
 
 ### Route Symbol Filters
 This is taken from ExpressJS. Route filters let you map functions against symbols in your routes. These functions then get executed when those symbols are matched.
