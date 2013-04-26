@@ -166,9 +166,10 @@ $app->get('/admin', function () use ($app)  {
 ```php
 <?php
 $data = $app->cache('users', function () {
-	return array('sheryl', 'addie', 'jaydee');
+	return array('bill', 'ted', 'elmo');
 }, 60);
-$app->cache_invalidate('users', 'products', 'news');
+
+$app->cache_invalidate('users');
 ?>
 ```
 
