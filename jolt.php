@@ -174,7 +174,7 @@ class Jolt{
 		$rawData = file_get_contents("php://input");
 		return json_decode($rawData);
 	}
-	public function redirect(/* $code_or_path, $path_or_cond, $cond */) {
+  	public function redirect(/* $code_or_path, $path_or_cond, $cond */) {
 		$argv = func_get_args();
 		$argc = count($argv);
 		$path = null;
@@ -287,6 +287,7 @@ class Jolt{
 	public function render($view, $locals = null, $layout = null) {
 		$locals['uri'] = $this->getBaseUri();
 		$locals['cpage'] = $this->getUri();
+		$locals['sitename'] = $this->option('site.name');
 		if (is_array($locals) && count($locals)) {
 			extract($locals, EXTR_SKIP);
 		}
@@ -300,7 +301,7 @@ class Jolt{
 				$layout = $this->option('views.layout');
 				$layout = ($layout == null) ? 'layout' : $layout;
 			}
-			$layout = "{$view_root}/{$layout}.php";	
+			$layout = "{$view_root}/layouts/{$layout}.php";	
 			header('Content-type: text/html; charset=utf-8');
 			$pageContent = $this->content();
 			ob_start();
@@ -462,8 +463,6 @@ class Jolt{
 	protected function defaultError() {
 		echo self::generateTemplateMarkup('Error', '<p>A website error has occured. The website administrator has been notified of the issue. Sorry for the temporary inconvenience.</p>');
 	}
-
-
 	public function cache($key, $func, $ttl = 0) {
 		if (extension_loaded('apc')) {
 			if (($data = apc_fetch($key)) === false) {
@@ -495,7 +494,6 @@ class Jolt{
 		}
 	}
 }
-
 class Jolt_Http_Request{
 	const METHOD_HEAD = 'HEAD';
 	const METHOD_GET = 'GET';
@@ -553,27 +551,10 @@ class Jolt_Http_Request{
 }
 
 class DataStore {
-	private $datastore;
 	public $token;
 	public function __construct($token){
 		$this->token = $token;
-		$this->datastore = new FileCache();
-	}
-	public function Get($key){
-		return $this->datastore->fetch($this->token.'-'.$key);
-	}
-	public function Set($key,$val,$ttl=6000){
-		return $this->datastore->store($this->token.'-'.$key,$val,$ttl);
-	}
-	public function Delete($key){
-		return $this->datastore->nuke($this->token.'-'.$key);
-	}
-}
-
-class FileCache {
-	// General function to find the filename for a certain key
-	public function __construct(){
-		$path = dirname(__FILE__) . '/_cache/';
+		$path = '_cache/';
 		if( !is_dir($path) ){
 			mkdir($path,0777);
 		}
@@ -582,11 +563,20 @@ class FileCache {
 		}
 		return true;
 	}
-	public function getFileName($key) {
-		return dirname(__FILE__) . '/_cache/' . ($key).'.store';
+	public function Get($key){
+		return $this->_fetch($this->token.'-'.$key);
 	}
-	function store($key,$data,$ttl) {
-		$h = fopen($this->getFileName($key),'a+');
+	public function Set($key,$val,$ttl=6000){
+		return $this->_store($this->token.'-'.$key,$val,$ttl);
+	}
+	public function Delete($key){
+		return $this->_nuke($this->token.'-'.$key);
+	}
+	private function _getFileName($key) {
+		return '_cache/' . ($key).'.store';
+	}
+	private function _store($key,$data,$ttl) {
+		$h = fopen($this->_getFileName($key),'a+');
 		if (!$h) throw new Exception('Could not write to cache');
 		flock($h,LOCK_EX);
 		fseek($h,0);
@@ -597,8 +587,8 @@ class FileCache {
 		}
 		fclose($h);
 	}
-	function fetch($key) {
-		$filename = $this->getFileName($key);
+	private function _fetch($key) {
+		$filename = $this->_getFileName($key);
 		if (!file_exists($filename)) return false;
 		$h = fopen($filename,'r');
 		if (!$h) return false;
@@ -616,8 +606,8 @@ class FileCache {
 		}
 		return $data[1];
 	}
-	function nuke( $key ) {
-		$filename = $this->getFileName($key);
+	private function _nuke( $key ) {
+		$filename = $this->_getFileName($key);
 		if (file_exists($filename)) {
 			return unlink($filename);
 		} else {
