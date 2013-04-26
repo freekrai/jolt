@@ -12,6 +12,7 @@ class Jolt{
 	protected static $baseUri;
 	protected static $uri;
 	protected static $queryString;
+	private $request;
 	private $route_map = array(
 		'GET' => array(),
 		'POST' => array()
@@ -20,6 +21,10 @@ class Jolt{
 	public function __construct($name='',$debug = false){
 		$this->name = $name;
 		$this->debug = false;
+		$this->request = new Jolt_Http_Request();
+	}
+	public function request(){
+		return $this->request;
 	}
 	public function listen(){
 		if( $this->debug ){
@@ -455,5 +460,170 @@ class Jolt{
 	}
 	protected function defaultError() {
 		echo self::generateTemplateMarkup('Error', '<p>A website error has occured. The website administrator has been notified of the issue. Sorry for the temporary inconvenience.</p>');
+	}
+}
+
+class Jolt_Http_Request{
+	const METHOD_HEAD = 'HEAD';
+	const METHOD_GET = 'GET';
+	const METHOD_POST = 'POST';
+	const METHOD_PUT = 'PUT';
+	const METHOD_DELETE = 'DELETE';
+	const METHOD_OVERRIDE = '_METHOD';
+	protected $method;
+	private $get;
+	private $post;
+	public function __construct(){
+		$this->method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : false;
+		$this->get = $_GET;
+		$this->post = $_POST;
+	}
+	public function isGet() {
+		return $this->method === self::METHOD_GET;
+	}
+	public function isPost() {
+		return $this->method === self::METHOD_POST;
+	}
+	public function isPut() {
+		return $this->method === self::METHOD_PUT;
+	}
+	public function isDelete() {
+		return $this->method === self::METHOD_DELETE;
+	}
+	public function isHead() {
+		return $this->method === self::METHOD_HEAD;
+	}
+	public function isAjax() {
+		return ( $this->params('isajax') || $this->headers('X_REQUESTED_WITH') === 'XMLHttpRequest' );
+	}
+	public function params( $key ) {
+		foreach( array('post', 'get') as $dataSource ){
+			$source = $this->$dataSource;
+			if ( isset($source[(string)$key]) ){
+				return $source[(string)$key];
+			}
+		}
+		return null;
+	}
+	public function post($key){
+		if( isset($this->post[$key]) ){
+			return $this->post[$key];
+		}
+		return null;
+	}
+	public function get($key){
+		if( isset($this->get[$key]) ){
+			return $this->get[$key];
+		}
+		return null;
+	}
+}
+
+if (extension_loaded('apc')) {
+	function cache($key, $func, $ttl = 0) {
+		if (($data = apc_fetch($key)) === false) {
+			$data = call_user_func($func);
+			if ($data !== null) {
+				apc_store($key, $data, $ttl);
+			}
+		}
+		return $data;
+	}
+	function cache_invalidate() {
+		foreach (func_get_args() as $key) {
+			apc_delete($key);
+		}
+	}
+}else{
+	$ds = new DataStore('jolt');
+	function cache($key, $func, $ttl = 0) {
+		global $ds;
+		if( ($data = $ds->Get($key) )  === false) {
+			$data = call_user_func($func);
+			if ($data !== null) {
+				$ds->Set($key,$data,$ttl);
+			}
+		}
+		return $data;
+	}
+	function cache_invalidate() {
+		global $ds;
+		foreach (func_get_args() as $key) {
+			$ds->nuke($key);
+		}
+	}
+}
+
+class DataStore {
+	private $datastore;
+	public $token;
+	public function __construct($token){
+		$this->token = $token;
+		$this->datastore = new FileCache();
+	}
+	public function Get($key){
+		return $this->datastore->fetch($this->token.'-'.$key);
+	}
+	public function Set($key,$val,$ttl=6000){
+		return $this->datastore->store($this->token.'-'.$key,$val,$ttl);
+	}
+	public function Delete($key){
+		return $this->datastore->nuke($this->token.'-'.$key);
+	}
+}
+
+class FileCache {
+	// General function to find the filename for a certain key
+	public function __construct(){
+		$path = dirname(__FILE__) . '/_cache/';
+		if( !is_dir($path) ){
+			mkdir($path,0777);
+		}
+		if( !is_writable($path) ){
+			chmod($path,0777);
+		}
+		return true;
+	}
+	public function getFileName($key) {
+		return dirname(__FILE__) . '/_cache/' . ($key).'.store';
+	}
+	function store($key,$data,$ttl) {
+		$h = fopen($this->getFileName($key),'a+');
+		if (!$h) throw new Exception('Could not write to cache');
+		flock($h,LOCK_EX);
+		fseek($h,0);
+		ftruncate($h,0);
+		$data = serialize(array(time()+$ttl,$data));
+		if (fwrite($h,$data)===false) {
+			throw new Exception('Could not write to cache');
+		}
+		fclose($h);
+	}
+	function fetch($key) {
+		$filename = $this->getFileName($key);
+		if (!file_exists($filename)) return false;
+		$h = fopen($filename,'r');
+		if (!$h) return false;
+		flock($h,LOCK_SH);
+		$data = file_get_contents($filename);
+		fclose($h);
+		$data = @unserialize($data);
+		if (!$data) {
+			unlink($filename);
+			return false;
+		}
+		if (time() > $data[0]) {
+			unlink($filename);
+			return false;
+		}
+		return $data[1];
+	}
+	function nuke( $key ) {
+		$filename = $this->getFileName($key);
+		if (file_exists($filename)) {
+			return unlink($filename);
+		} else {
+			return false;
+		}
 	}
 }
