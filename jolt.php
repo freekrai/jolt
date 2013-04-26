@@ -164,6 +164,10 @@ class Jolt{
 	public function send($str){
 		echo $str;
 	}
+	public function raw(){
+		$rawData = file_get_contents("php://input");
+		return json_decode($rawData);
+	}
 	public function redirect(/* $code_or_path, $path_or_cond, $cond */) {
 		$argv = func_get_args();
 		$argc = count($argv);
