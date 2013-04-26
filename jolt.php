@@ -13,6 +13,7 @@ class Jolt{
 	protected static $uri;
 	protected static $queryString;
 	private $request;
+	private $datastore;
 	private $route_map = array(
 		'GET' => array(),
 		'POST' => array()
@@ -461,6 +462,38 @@ class Jolt{
 	protected function defaultError() {
 		echo self::generateTemplateMarkup('Error', '<p>A website error has occured. The website administrator has been notified of the issue. Sorry for the temporary inconvenience.</p>');
 	}
+
+
+	public function cache($key, $func, $ttl = 0) {
+		if (extension_loaded('apc')) {
+			if (($data = apc_fetch($key)) === false) {
+				$data = call_user_func($func);
+				if ($data !== null) {
+					apc_store($key, $data, $ttl);
+				}
+			}
+		}else{
+			$this->datastore = new DataStore('jolt');
+			if( ($data = $this->datastore->Get($key) )  === false) {
+				$data = call_user_func($func);
+				if ($data !== null) {
+					$this->datastore->Set($key,$data,$ttl);
+				}
+			}
+		}
+		return $data;
+	}
+	public function cache_invalidate() {
+		if (extension_loaded('apc')) {
+			foreach (func_get_args() as $key) {
+				apc_delete($key);
+			}
+		}else{
+			foreach (func_get_args() as $key) {
+				$this->datastore->nuke($key);
+			}
+		}
+	}
 }
 
 class Jolt_Http_Request{
@@ -516,41 +549,6 @@ class Jolt_Http_Request{
 			return $this->get[$key];
 		}
 		return null;
-	}
-}
-
-if (extension_loaded('apc')) {
-	function cache($key, $func, $ttl = 0) {
-		if (($data = apc_fetch($key)) === false) {
-			$data = call_user_func($func);
-			if ($data !== null) {
-				apc_store($key, $data, $ttl);
-			}
-		}
-		return $data;
-	}
-	function cache_invalidate() {
-		foreach (func_get_args() as $key) {
-			apc_delete($key);
-		}
-	}
-}else{
-	$ds = new DataStore('jolt');
-	function cache($key, $func, $ttl = 0) {
-		global $ds;
-		if( ($data = $ds->Get($key) )  === false) {
-			$data = call_user_func($func);
-			if ($data !== null) {
-				$ds->Set($key,$data,$ttl);
-			}
-		}
-		return $data;
-	}
-	function cache_invalidate() {
-		global $ds;
-		foreach (func_get_args() as $key) {
-			$ds->nuke($key);
-		}
 	}
 }
 

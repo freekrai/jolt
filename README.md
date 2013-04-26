@@ -161,6 +161,18 @@ $app->get('/admin', function () use ($app)  {
 ```
 *NOTE:* Because of the way conditions are defined, conditions can't have anonymous functions as their first parameter.
 
+### Caching
+
+```php
+<?php
+$data = $app->cache('users', function () {
+	return array('sheryl', 'addie', 'jaydee');
+}, 60);
+$app->cache_invalidate('users', 'products', 'news');
+?>
+```
+
+
 ### Configurations
 You can make use of ini files for configuration by doing something like `option('source', 'myconfig.ini')`.
 This lets you put configuration settings in ini files instead of making `option()` calls in your code.
