@@ -1,6 +1,7 @@
 <?php
 session_start();
 class Jolt{
+	protected static $apps = array();
 	public $name;
 	public $debug = false;
 	public $notFound;
@@ -19,10 +20,22 @@ class Jolt{
 		'POST' => array()
 	);
 	
-	public function __construct($name='',$debug = false){
-		$this->name = $name;
-		$this->debug = false;
+	public function __construct($name='default',$debug = false){
+		$this->debug = $debug;
 		$this->request = new Jolt_Http_Request();
+		if (is_null(static::getInstance($name))) {
+			$this->setName($name);
+		}
+	} 
+    public static function getInstance($name = 'default'){
+		return isset(static::$apps[$name]) ? static::$apps[$name] : null;
+	}
+    public function setName($name){
+		$this->name = $name;
+		static::$apps[$name] = $this;
+	}
+	public function getName(){
+		return $this->name;
 	}
 	public function request(){
 		return $this->request;
