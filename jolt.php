@@ -314,7 +314,7 @@ class Jolt{
 				$layout = $this->option('views.layout');
 				$layout = ($layout == null) ? 'layout' : $layout;
 			}
-			$layout = "{$view_root}/layouts/{$layout}.php";	
+			$layout = "{$view_root}/{$layout}.php";	
 			header('Content-type: text/html; charset=utf-8');
 			$pageContent = $this->content();
 			ob_start();
