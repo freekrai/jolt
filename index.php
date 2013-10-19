@@ -2,7 +2,6 @@
 
 require("jolt.php");
 
-$_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
 $app = new Jolt('site',false);
 $app->option('source', 'config.ini');
 
