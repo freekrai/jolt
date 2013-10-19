@@ -1,4 +1,5 @@
 <?php
+$_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
 session_start();
 class Jolt{
 	protected static $apps = array();
