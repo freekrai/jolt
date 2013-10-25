@@ -2,7 +2,7 @@
 
 require("jolt.php");
 
-$app = new Jolt('site',false);
+$app = new Jolt();
 $app->option('source', 'config.ini');
 
 // preload blog entry whenever a matching route has :blog_id in it
@@ -17,12 +17,16 @@ $app->get('/hello/:blog_id', function($blog_id) use ($app){
 		"name"=>$bid
 	));
 });
-$app->get('/hello', function() use ($app){
+$app->get('/hello/:name', function ($name){
+	$app = Jolt::getInstance();
+	// render a view
 	$app->render( 'page', array(
 		"pageTitle"=>"Hello",
-		"body"=>"Hello world!"
+		"body"=>"Hello {$name}!",
 	));
 });
+
+
 $app->get('/greet', function() use ($app){
 	$app->render( 'page', array(
 		"pageTitle"=>"Greetings",

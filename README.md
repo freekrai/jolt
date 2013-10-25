@@ -22,7 +22,7 @@ A typical PHP app using Jolt will look like this.
 // include the library
 include 'jolt.php';
 
-$app = new Jolt('my app');
+$app = new Jolt();
 
 // define your routes
 $app->get('/greet', function () use ($app){
@@ -40,7 +40,8 @@ $app->post('/greet', function () use ($app){
 	));
 });
 
-$app->get('/hello/:name', function ($name) use ($app){
+$app->get('/hello/:name', function ($name){
+	$app = Jolt::getInstance();
 	// render a view
 	$app->render( 'page', array(
 		"pageTitle"=>"Hello",
