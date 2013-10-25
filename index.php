@@ -35,6 +35,24 @@ $app->post('/greet', function() use ($app){
 		"body"=>"Greetings ".$_POST['name']."!"
 	));
 });
+
+//	instead of a function, we can also define a controller and action and have it called that way as well...
+$app->route('/greet2(/:name)', array("controller"=>'Greetings',"action"=>'my_name') );
+//	we can also define the class and action as a string.. Class#Action
+$app->route('/greet3(/:name)', 'Greetings#my_name' );
+
+class Greetings extends Jolt_Controller{
+    public function my_name($name = 'default'){
+		$this->app->render( 'page', array(
+			"pageTitle"=>"Greetings ".$this->sanitize($name)."!",
+			'title'=>'123',
+			"body"=>"Greetings ".$this->sanitize($name)."!"
+		),'marketing');
+
+    }
+}
+
+
 $app->get('/', function() use ($app){
 	$app->render( 'home' );
 });

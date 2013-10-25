@@ -127,6 +127,32 @@ $app->get('/blogs/:blog_id', function ($blog_id) use ($app)  {
 ?>
 ```
 
+### Using classes in Routes
+
+You can also make your routes a bit smarter by including classes, this helps move the code into smaller pieces:
+
+```php
+<?php
+//	instead of a function, we can also define a controller and action and have it called that way as well...
+$app->route('/greet2(/:name)', array("controller"=>'Greetings',"action"=>'my_name') );
+//	we can also define the class and action as a string.. Class#Action
+$app->route('/greet3(/:name)', 'Greetings#my_name' );
+
+class Greetings extends Jolt_Controller{
+    public function my_name($name = 'default'){
+		$this->app->render( 'page', array(
+			"pageTitle"=>"Greetings ".$this->sanitize($name)."!",
+			'title'=>'123',
+			"body"=>"Greetings ".$this->sanitize($name)."!"
+		));
+
+    }
+}
+?>
+```
+
+The classes extend our abstract Jolt_Controller class and already grab the $app variable as a class member, you can then store your code in controller classes seperately from the main index.php file, this can help make larger applications cleaner and neater.
+
 ### Middleware
 Helper function called during routing, handy for taking care of database connections, etc.
 

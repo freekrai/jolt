@@ -1,12 +1,22 @@
 <?php
-$_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
 session_start();
+$_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
+
+function site_url(){
+	return config( 'site.url' );
+}
+function config($key){
+	$app = Jolt::getInstance();
+	return $app->option($key);
+}
+
 class Jolt{
 	protected static $apps = array();
 	public $name;
 	public $debug = false;
 	public $notFound;
 	private $pattern;
+	private $container = array();
 	private $params = array();
 	protected $conditions = array();
 	protected static $defaultConditions = array();
@@ -47,6 +57,20 @@ class Jolt{
 		}	
 		$this->router();
 	}
+
+	public function __get($name){
+		return $this->container[$name];
+	}
+	public function __set($name, $value){
+		$this->container[$name] = $value;
+	}
+	public function __isset($name){
+		return isset($this->container[$name]);
+	}
+	public function __unset($name){
+		unset($this->container[$name]);
+	}
+
 	private function add_route($method = 'GET',$pattern,$cb = null,$conditions = null){
 		$method = strtoupper($method);
 		if (!in_array($method, array('GET', 'POST')))
@@ -81,6 +105,35 @@ class Jolt{
 					}
 					if (is_callable($obj['cb'])) {
 						call_user_func_array($obj['cb'], $argv);
+					}else if( is_array($obj['cb']) ){
+						//	if this was an array instead of a direct function..
+						$class_name = $obj['cb']['controller'];
+						$act = $obj['cb']['action'];
+						//	does the class exist?
+						if (class_exists($class_name) ){
+							//	yup.. so call it..
+							$s = new $class_name(); 
+							//	what about the method inside the class?
+							if (method_exists($s, $act)) {
+								//	this method lets us call the class->method and still pass the variables we defined earlier...
+								call_user_func_array( array($s, $act), $argv );
+							}
+						}
+					}else if( stristr($obj['cb'],"#") ){
+						$ex = explode("#",$obj['cb']);
+						//	if this was an array instead of a direct function..
+						$class_name = $ex[0];
+						$act = $ex[1];
+						//	does the class exist?
+						if (class_exists($class_name) ){
+							//	yup.. so call it..
+							$s = new $class_name(); 
+							//	what about the method inside the class?
+							if (method_exists($s, $act)) {
+								//	this method lets us call the class->method and still pass the variables we defined earlier...
+								call_user_func_array( array($s, $act), $argv );
+							}
+						}
 					}
 					return;
 				}
@@ -172,6 +225,11 @@ class Jolt{
 	}
 	public function delete($pattern,$cb = null,$conditions=null){
 		if( $this->method('DELETE') ){	//	only process during DELETE
+			return $this->add_route('GET',$pattern,$cb,$conditions);
+		}
+	}
+	public function patch($pattern,$cb = null,$conditions=null){
+		if( $this->method('PATCH') ){	//	only process during DELETE
 			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
@@ -508,38 +566,214 @@ class Jolt{
 		}
 	}
 }
+
+abstract class Jolt_Controller{
+	protected  $app;
+	protected static $nonce = NULL;
+	function __construct(){
+	 	$this->app  = Jolt::getInstance();
+	}
+	protected function sanitize( $dirty ){
+		return htmlentities(strip_tags($dirty), ENT_QUOTES);
+	}
+
+	protected function generate_nonce(  ){
+		// Checks for an existing nonce before creating a new one
+		if (empty(self::$nonce)) {
+			self::$nonce = base64_encode(uniqid(NULL, TRUE));
+			$_SESSION['nonce'] = self::$nonce;
+		}
+		return self::$nonce;
+	}
+	protected function check_nonce(  ){
+		if (
+		isset($_SESSION['nonce']) && !empty($_SESSION['nonce']) 
+		&& isset($_POST['nonce']) && !empty($_POST['nonce']) 
+		&& $_SESSION['nonce']===$_POST['nonce']
+			) {
+			$_SESSION['nonce'] = NULL;
+			return TRUE;
+		} else {
+			return FALSE;
+		}
+	}
+
+}
+
+class Jolt_Set implements \ArrayAccess, \Countable, \IteratorAggregate{
+	protected $data = array();
+	public function __construct($items = array()){
+		$this->replace($items);
+	}
+	protected function normalizeKey($key){
+		return $key;
+	}
+	public function set($key, $value){
+		$this->data[$this->normalizeKey($key)] = $value;
+	}
+	public function get($key, $default = null){
+		if ($this->has($key)) {
+			$isInvokable = is_object($this->data[$this->normalizeKey($key)]) && method_exists($this->data[$this->normalizeKey($key)], '__invoke');
+			return $isInvokable ? $this->data[$this->normalizeKey($key)]($this) : $this->data[$this->normalizeKey($key)];
+		}
+		return $default;
+	}
+	public function replace($items){
+		foreach ($items as $key => $value) {
+			$this->set($key, $value); // Ensure keys are normalized
+		}
+	}
+	public function all(){
+		return $this->data;
+	}
+	public function keys(){
+		return array_keys($this->data);
+	}
+	public function has($key){
+		return array_key_exists($this->normalizeKey($key), $this->data);
+	}
+	public function remove($key){
+		unset($this->data[$this->normalizeKey($key)]);
+	}
+	public function clear(){
+		$this->data = array();
+	}
+	public function offsetExists($offset){
+		return $this->has($offset);
+	}
+	public function offsetGet($offset){
+		return $this->get($offset);
+	}
+	public function offsetSet($offset, $value){
+		$this->set($offset, $value);
+	}
+	public function offsetUnset($offset){
+		$this->remove($offset);
+	}
+	public function count(){
+		return count($this->data);
+	}
+	public function getIterator(){
+		return new \ArrayIterator($this->data);
+	}
+	public function singleton($key, $value){
+		$this->set($key, function ($c) use ($value) {
+			static $object;
+			if (null === $object) {
+				$object = $value($c);
+			}
+			return $object;
+		});
+	}
+	public function protect(\Closure $callable){
+		return function () use ($callable) {
+			return $callable;
+		};
+	}
+}
+class Jolt_Headers extends Jolt_Set{
+	protected static $special = array(
+		'CONTENT_TYPE',
+		'CONTENT_LENGTH',
+		'PHP_AUTH_USER',
+		'PHP_AUTH_PW',
+		'PHP_AUTH_DIGEST',
+		'AUTH_TYPE'
+	);
+	public static function extract($data){
+		$results = array();
+		foreach ($data as $key => $value) {
+			$key = strtoupper($key);
+			if (strpos($key, 'X_') === 0 || strpos($key, 'HTTP_') === 0 || in_array($key, static::$special)) {
+				if ($key === 'HTTP_CONTENT_TYPE' || $key === 'HTTP_CONTENT_LENGTH') {
+					continue;
+				}
+				$results[$key] = $value;
+			}
+		}
+		return $results;
+	}
+	protected function normalizeKey($key){
+		$key = strtolower($key);
+		$key = str_replace(array('-', '_'), ' ', $key);
+		$key = preg_replace('#^http #', '', $key);
+		$key = ucwords($key);
+		$key = str_replace(' ', '-', $key);
+		return $key;
+	}
+    public static function parseCookieHeader($header){
+        $cookies = array();
+        $header = rtrim($header, "\r\n");
+        $headerPieces = preg_split('@\s*[;,]\s*@', $header);
+        foreach ($headerPieces as $c) {
+            $cParts = explode('=', $c);
+            if (count($cParts) === 2) {
+                $key = urldecode($cParts[0]);
+                $value = urldecode($cParts[1]);
+                if (!isset($cookies[$key])) {
+                    $cookies[$key] = $value;
+                }
+            }
+        }
+
+        return $cookies;
+    }
+	
+}
+
 class Jolt_Http_Request{
 	const METHOD_HEAD = 'HEAD';
 	const METHOD_GET = 'GET';
 	const METHOD_POST = 'POST';
 	const METHOD_PUT = 'PUT';
+	const METHOD_PATCH = 'PATCH';
 	const METHOD_DELETE = 'DELETE';
+    const METHOD_OPTIONS = 'OPTIONS';
 	const METHOD_OVERRIDE = '_METHOD';
+    protected static $formDataMediaTypes = array('application/x-www-form-urlencoded');
 	protected $method;
 	private $get;
 	private $post;
+	private $env;
+	private $headers;
+	private $cookies;
 	public function __construct(){
-		$this->method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : false;
+		$this->env = $_SERVER;
+		$this->method = isset($this->env['REQUEST_METHOD']) ? $this->env['REQUEST_METHOD'] : false;
 		$this->get = $_GET;
 		$this->post = $_POST;
+        $this->headers = new Jolt_Headers( Jolt_Headers::extract($this->env) );
+        @$this->cookies = Jolt_Headers::parseCookieHeader( $this->env['HTTP_COOKIE'] );
 	}
+    public function getMethod(){
+        return $this->env['REQUEST_METHOD'];
+    }
 	public function isGet() {
-		return $this->method === self::METHOD_GET;
+		return $this->getMethod() === self::METHOD_GET;
 	}
 	public function isPost() {
-		return $this->method === self::METHOD_POST;
+		return $this->getMethod() === self::METHOD_POST;
 	}
 	public function isPut() {
-		return $this->method === self::METHOD_PUT;
+		return $this->getMethod() === self::METHOD_PUT;
+	}
+	public function isPatch() {
+		return $this->getMethod() === self::METHOD_PATCH;
 	}
 	public function isDelete() {
-		return $this->method === self::METHOD_DELETE;
+		return $this->getMethod() === self::METHOD_DELETE;
 	}
 	public function isHead() {
-		return $this->method === self::METHOD_HEAD;
+		return $this->getMethod() === self::METHOD_HEAD;
+	}
+	public function isOptions(){
+		return $this->getMethod() === self::METHOD_OPTIONS;
 	}
 	public function isAjax() {
 		return ( $this->params('isajax') || $this->headers('X_REQUESTED_WITH') === 'XMLHttpRequest' );
+	}
+	public function isXhr(){
+		return $this->isAjax();
 	}
 	public function params( $key ) {
 		foreach( array('post', 'get') as $dataSource ){
@@ -562,6 +796,138 @@ class Jolt_Http_Request{
 		}
 		return null;
 	}
+	public function put($key = null){
+		return $this->post($key);
+	}
+	public function patch($key = null){
+		return $this->post($key);
+	}
+	public function delete($key = null){
+		return $this->post($key);
+	}
+	public function cookies($key = null){
+		if ($key) {
+			return $this->cookies->get($key);
+		}
+		return $this->cookies;
+	}
+	public function isFormData(){
+		$method = $this->getMethod();
+		return ($method === self::METHOD_POST && is_null($this->getContentType())) || in_array($this->getMediaType(), self::$formDataMediaTypes);
+	}
+	public function headers($key = null, $default = null){
+		if ($key) {
+			return $this->headers->get($key, $default);
+		}
+		return $this->headers;
+	}
+	public function getBody(){
+		return $this->env['slim.input'];
+	}
+	public function getContentType(){
+		return $this->headers->get('CONTENT_TYPE');
+	}
+	public function getMediaType(){
+		$contentType = $this->getContentType();
+		if ($contentType) {
+			$contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+			return strtolower($contentTypeParts[0]);
+		}
+		return null;
+	}
+	public function getMediaTypeParams(){
+		$contentType = $this->getContentType();
+		$contentTypeParams = array();
+		if ($contentType) {
+			$contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+			$contentTypePartsLength = count($contentTypeParts);
+			for ($i = 1; $i < $contentTypePartsLength; $i++) {
+				$paramParts = explode('=', $contentTypeParts[$i]);
+				$contentTypeParams[strtolower($paramParts[0])] = $paramParts[1];
+			}
+		}
+		return $contentTypeParams;
+	}
+    public function getContentCharset(){
+		$mediaTypeParams = $this->getMediaTypeParams();
+		if (isset($mediaTypeParams['charset'])) {
+			return $mediaTypeParams['charset'];
+		}
+		return null;
+    }
+    public function getContentLength(){
+        return $this->headers->get('CONTENT_LENGTH', 0);
+    }
+    public function getHost(){
+        if (isset($this->env['HTTP_HOST'])) {
+            if (strpos($this->env['HTTP_HOST'], ':') !== false) {
+                $hostParts = explode(':', $this->env['HTTP_HOST']);
+                return $hostParts[0];
+            }
+            return $this->env['HTTP_HOST'];
+        }
+        return $this->env['SERVER_NAME'];
+    }
+    public function getHostWithPort(){
+        return sprintf('%s:%s', $this->getHost(), $this->getPort());
+    }
+    public function getPort(){
+        return (int)$this->env['SERVER_PORT'];
+    }
+    public function getScheme(){
+		return ( empty($this->env['HTTPS']) || $this->env['HTTPS'] === 'off' ) ? 'http' : 'https';
+    }
+    public function getScriptName()
+    {
+        return $this->env['SCRIPT_NAME'];
+    }
+    public function getRootUri()
+    {
+        return $this->getScriptName();
+    }
+    public function getPath()
+    {
+        return $this->getScriptName() . $this->getPathInfo();
+    }
+    public function getPathInfo()
+    {
+        return $this->env['PATH_INFO'];
+    }
+    public function getResourceUri()
+    {
+        return $this->getPathInfo();
+    }
+    public function getUrl()
+    {
+        $url = $this->getScheme() . '://' . $this->getHost();
+        if (($this->getScheme() === 'https' && $this->getPort() !== 443) || ($this->getScheme() === 'http' && $this->getPort() !== 80)) {
+            $url .= sprintf(':%s', $this->getPort());
+        }
+
+        return $url;
+    }
+    public function getIp()
+    {
+        if (isset($this->env['X_FORWARDED_FOR'])) {
+            return $this->env['X_FORWARDED_FOR'];
+        } elseif (isset($this->env['CLIENT_IP'])) {
+            return $this->env['CLIENT_IP'];
+        }
+
+        return $this->env['REMOTE_ADDR'];
+    }
+    public function getReferrer()
+    {
+        return $this->headers->get('HTTP_REFERER');
+    }
+    public function getReferer()
+    {
+        return $this->getReferrer();
+    }
+    public function getUserAgent()
+    {
+        return $this->headers->get('HTTP_USER_AGENT');
+    }
 }
 
 class DataStore {
