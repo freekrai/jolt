@@ -154,6 +154,8 @@ class Greetings extends Jolt_Controller{
 
 The classes extend our abstract Jolt_Controller class and already grab the $app variable as a class member, you can then store your code in controller classes seperately from the main index.php file, this can help make larger applications cleaner and neater.
 
+Using a controller class, the function that gets called would still contain the variables that you pass, so in the above example, we passed $name as a variable, and the my_name function inside the Greetings class received it.
+
 ### Middleware
 Helper function called during routing, handy for taking care of database connections, etc.
 
@@ -236,6 +238,9 @@ $app->post('/rule',function() use ($app){
 	
 });
 $app->put('/rule',function() use ($app){
+	
+});
+$app->patch('/rule',function() use ($app){
 	
 });
 $app->delete('/rule',function() use ($app){
