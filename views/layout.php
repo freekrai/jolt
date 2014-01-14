@@ -17,9 +17,9 @@
 				<div class="navbar-inner">
 					<div class="container">
 						<ul class="nav">
-							<li class="active"><a href="/">Home</a></li>
-							<li><a href="/greet">First route</a></li>
-							<li><a href="/hello/you">Second route</a></li>
+							<li><a href="./">Home</a></li>
+							<li><a href="./greet">First route</a></li>
+							<li><a href="./hello/you">Second route</a></li>
 						</ul>
 					</div>
 				</div>
@@ -28,7 +28,7 @@
 		<?=$pageContent?>
 		<hr />
 		<div class="footer">
-			<p>&copy; Company 2013</p>
+			<p>&copy; Company 2014</p>
 		</div>
 	</div> <!-- /container -->
 </body>
