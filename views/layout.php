@@ -28,7 +28,7 @@
 		<?=$pageContent?>
 		<hr />
 		<div class="footer">
-			<p>&copy; Company 2013</p>
+			<p>&copy; Company <?=date("Y")?></p>
 		</div>
 	</div> <!-- /container -->
 </body>
