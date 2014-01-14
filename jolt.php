@@ -603,7 +603,7 @@ abstract class Jolt_Controller{
 	Command-line utility class for when you run apps via command-line.
 */
 abstract class Jolt_CLI{
-	public arguments = array();
+	public $arguments = array();
 	public function __construct( $argv ){
 		$this->arguments = $this->get_arguments( $argv );
 	}

@@ -5,18 +5,7 @@ require("jolt.php");
 $app = new Jolt();
 $app->option('source', 'config.ini');
 
-// preload blog entry whenever a matching route has :blog_id in it
-$app->filter('blog_id', function ($blog_id) use ($app){
-	//	load this blog post
-	$app->store('blog', $blog_id);
-});
-$app->get('/hello/:blog_id', function($blog_id) use ($app){
-	$bid = $app->store('blog');
-	$app->render( 'hello', array(
-		"pageTitle"=>"Hello {$bid}",
-		"name"=>$bid
-	));
-});
+
 $app->get('/hello/:name', function ($name){
 	$app = Jolt::getInstance();
 	// render a view
@@ -58,6 +47,8 @@ class Greetings extends Jolt_Controller{
 
 
 $app->get('/', function() use ($app){
-	$app->render( 'home' );
+	$app->render( 'home', array(
+			'pageTitle' => 'Welcome to Jolt demo'
+		));
 });
 $app->listen();
