@@ -1,8 +1,9 @@
 <?php
 
-require("jolt.php");
+require 'Jolt/Jolt.php';
+Jolt::registerAutoloader();
 
-$app = new Jolt();
+$app = new Jolt\Jolt();
 $app->option('source', 'config.ini');
 
 // preload blog entry whenever a matching route has :blog_id in it
@@ -45,7 +46,7 @@ $app->route('/greet2(/:name)', array("controller"=>'Greetings',"action"=>'my_nam
 //	we can also define the class and action as a string.. Class#Action
 $app->route('/greet3(/:name)', 'Greetings#my_name' );
 
-class Greetings extends Jolt_Controller{
+class Greetings extends \Jolt\Controller{
     public function my_name($name = 'default'){
 		$this->app->render( 'page', array(
 			"pageTitle"=>"Greetings ".$this->sanitize($name)."!",

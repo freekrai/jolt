@@ -11,6 +11,8 @@ You can see more info at the [Jolt home page](http://joltframework.com/):
 
 For database, I recommend [Idiorm and Paris](http://j4mie.github.com/idiormandparis/)
 
+This version is moving Jolt towards PSR-0 support.
+
 ### Requirements
 * PHP 5.3
 
@@ -20,9 +22,12 @@ A typical PHP app using Jolt will look like this.
 ```php
 <?php
 // include the library
-include 'jolt.php';
 
-$app = new Jolt();
+require 'Jolt/Jolt.php';
+Jolt::registerAutoloader();
+
+$app = new Jolt\Jolt();
+
 
 // define your routes
 $app->get('/greet', function () use ($app){
@@ -139,7 +144,7 @@ $app->route('/greet2(/:name)', array("controller"=>'Greetings',"action"=>'my_nam
 //	we can also define the class and action as a string.. Class#Action
 $app->route('/greet3(/:name)', 'Greetings#my_name' );
 
-class Greetings extends Jolt_Controller{
+class Greetings extends \Jolt\Controller{
     public function my_name($name = 'default'){
 		$this->app->render( 'page', array(
 			"pageTitle"=>"Greetings ".$this->sanitize($name)."!",
@@ -302,3 +307,104 @@ $app->getUri();	//	returns the current uri for example, /login if you are on the
 $html = $app->partial('users/profile', array('user' => $user));
 ?>
 ```
+
+
+### Setup your web server
+
+#### Apache
+
+Ensure the `.htaccess` and `index.php` files are in the same public-accessible directory. The `.htaccess` file
+should contain this code:
+
+	RewriteEngine On
+
+	# Some hosts may require you to use the `RewriteBase` directive.
+	# If you need to use the `RewriteBase` directive, it should be the
+	# absolute physical path to the directory that contains this htaccess file.
+
+	RewriteBase /
+
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteRule ^ index.php [QSA,L]
+
+
+#### Nginx
+
+The nginx configuration file should contain this code (along with other settings you may need) in your `location` block:
+
+    try_files $uri $uri/ /index.php?$args;
+
+This assumes that Jolt's `index.php` is in the root folder of your project (www root).
+
+#### HipHop Virtual Machine for PHP
+
+Your HipHop Virtual Machine configuration file should contain this code (along with other settings you may need).
+Be sure you change the `ServerRoot` setting to point to your Jolt app's document root directory.
+
+    Server {
+        SourceRoot = /path/to/public/directory
+    }
+
+    ServerVariables {
+        SCRIPT_NAME = /index.php
+    }
+
+    VirtualHost {
+        * {
+            Pattern = .*
+            RewriteRules {
+                    * {
+                            pattern = ^(.*)$
+                            to = index.php/$1
+                            qsa = true
+                    }
+            }
+        }
+    }
+
+#### lighttpd ####
+
+Your lighttpd configuration file should contain this code (along with other settings you may need). This code requires
+lighttpd >= 1.4.24.
+
+    url.rewrite-if-not-file = ("(.*)" => "/index.php/$0")
+
+This assumes that Jolt's `index.php` is in the root folder of your project (www root).
+
+#### IIS
+
+Ensure the `Web.config` and `index.php` files are in the same public-accessible directory. The `Web.config` file should contain this code:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <system.webServer>
+            <rewrite>
+                <rules>
+                    <rule name="jolt" patternSyntax="Wildcard">
+                        <match url="*" />
+                        <conditions>
+                            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+                            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+                        </conditions>
+                        <action type="Rewrite" url="index.php" />
+                    </rule>
+                </rules>
+            </rewrite>
+        </system.webServer>
+    </configuration>
+
+## Documentation
+
+<http://joltframework.com/docs/>
+
+## How to Contribute
+
+### Pull Requests
+
+1. Fork the Jolt Framework repository
+2. Create a new branch for each feature or improvement
+3. Send a pull request from each feature branch to the **develop** branch
+
+It is very important to separate new features or improvements into separate feature branches, and to send a pull
+request for each branch. This allows me to review and pull in new features or improvements individually.
