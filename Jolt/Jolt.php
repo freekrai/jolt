@@ -2,12 +2,6 @@
 
 namespace Jolt;
 
-use Jolt\Controller;
-use Jolt\CLI;
-use Jolt\Set;
-use Jolt\Headers;
-use Jolt\HttpRequest;
-
 session_start();
 $_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
 
