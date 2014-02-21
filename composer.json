@@ -15,9 +15,6 @@
     "require": {
         "php": ">=5.3.0"
     },
-    "suggest": {
-        "ext-mcrypt": "Required for HTTP cookie encryption"
-    },
     "autoload": {
         "psr-0": { "Jolt": "." }
     }
