@@ -17,9 +17,9 @@
 				<div class="navbar-inner">
 					<div class="container">
 						<ul class="nav">
-							<li class="active"><a href="/">Home</a></li>
-							<li><a href="/greet">First route</a></li>
-							<li><a href="/hello/you">Second route</a></li>
+							<li class="active"><a href="<?= $uri?>/">Home</a></li>
+							<li><a href="<?= $uri?>/greet">First route</a></li>
+							<li><a href="<?= $uri?>/hello/you">Second route</a></li>
 						</ul>
 					</div>
 				</div>

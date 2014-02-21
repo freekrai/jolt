@@ -11,7 +11,9 @@ You can see more info at the [Jolt home page](http://joltframework.com/):
 
 For database, I recommend [Idiorm and Paris](http://j4mie.github.com/idiormandparis/)
 
-This version is moving Jolt towards PSR-0 support.
+This version is moving Jolt towards PSR-0 support and eventually into a Composer package.
+
+If you don't want to use Composer, then you can use the autoloader.
 
 ### Requirements
 * PHP 5.3
@@ -24,7 +26,7 @@ A typical PHP app using Jolt will look like this.
 // include the library
 
 require 'Jolt/Jolt.php';
-Jolt::registerAutoloader();
+\Jolt\Jolt::registerAutoloader();
 
 $app = new Jolt\Jolt();
 
@@ -46,7 +48,7 @@ $app->post('/greet', function () use ($app){
 });
 
 $app->get('/hello/:name', function ($name){
-	$app = Jolt::getInstance();
+	$app = \Jolt\Jolt::getInstance();
 	// render a view
 	$app->render( 'page', array(
 		"pageTitle"=>"Hello",

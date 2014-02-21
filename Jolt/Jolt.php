@@ -5,14 +5,6 @@ namespace Jolt;
 session_start();
 $_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
 
-function site_url(){
-	return config( 'site.url' );
-}
-function config($key){
-	$app = Jolt::getInstance();
-	return $app->option($key);
-}
-
 class Jolt{
 	protected static $apps = array();
 	public $name;
