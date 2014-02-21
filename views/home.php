@@ -4,7 +4,7 @@
 	<p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
 </div>
 <hr>
-<form method="post" action="/greet">
+<form method="post" action="<?= $uri?>/greet">
 	<input type="text" name="name" value="" />
 	<button type="submit">Say it</button>
 </form
