@@ -10,8 +10,7 @@ $_GET['route'] = isset($_GET['route']) ? '/'.$_GET['route'] : '/';
  * If you are using Composer, you can skip this step.
  */
 
-require 'Jolt/Jolt.php';
-\Jolt\Jolt::registerAutoloader();
+require 'jolt.php';
 
 
 /**
@@ -19,7 +18,7 @@ require 'Jolt/Jolt.php';
  *
  */
 
-$app = new \Jolt\Jolt();
+$app = new Jolt();
 $app->option('source', 'config.ini');
 
 
@@ -46,7 +45,7 @@ $app->get('/hello/:blog_id', function($blog_id) use ($app){
 	));
 });
 $app->get('/hello/:name', function ($name){
-	$app = \Jolt\Jolt::getInstance();
+	$app = Jolt::getInstance();
 	// render a view
 	$app->render( 'page', array(
 		"pageTitle"=>"Hello",
@@ -73,7 +72,7 @@ $app->route('/greet2(/:name)', array("controller"=>'Greetings',"action"=>'my_nam
 //	we can also define the class and action as a string.. Class#Action
 $app->route('/greet3(/:name)', 'Greetings#my_name' );
 
-class Greetings extends \Jolt\Controller{
+class Greetings extends Jolt_Controller{
     public function my_name($name = 'default'){
 		$this->app->render( 'page', array(
 			"pageTitle"=>"Greetings ".$this->sanitize($name)."!",
@@ -135,6 +134,6 @@ function site_url(){
  *	return a value that matches the key we pass
  */
 function config($key){
-	$app = \Jolt\Jolt::getInstance();
+	$app = Jolt::getInstance();
 	return $app->option($key);
 }
