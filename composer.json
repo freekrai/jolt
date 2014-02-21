@@ -1,5 +1,5 @@
 {
-    "name": "Jolt/Jolt",
+    "name": "jolt/jolt",
     "type": "library",
     "description": "Jolt Framework, a PHP micro framework",
     "keywords": ["microframework","rest","router"],
