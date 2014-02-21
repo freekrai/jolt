@@ -11,11 +11,10 @@ You can see more info at the [Jolt home page](http://joltframework.com/):
 
 For database, I recommend [Idiorm and Paris](http://j4mie.github.com/idiormandparis/)
 
-This version is moving Jolt towards PSR-0 support and eventually into a Composer package.
-
 If you don't want to use Composer, then you can use the autoloader.
 
 ### Requirements
+
 * PHP 5.3
 
 ## Getting Started
