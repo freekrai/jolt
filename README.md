@@ -87,8 +87,8 @@ Each subsequent route segment is optional. This route will accept HTTP requests 
 
 - /archives
 - /archives/2013
-- /archivs/2013/04
-- /archivs/2013/04/05
+- /archives/2013/04
+- /archives/2013/04/05
 
 If an optional route segment is omitted from the HTTP request, the default values in the callback signature are used instead.
 
