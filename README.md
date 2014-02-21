@@ -18,6 +18,14 @@ If you don't want to use Composer, then you can use the autoloader.
 ### Requirements
 * PHP 5.3
 
+## Getting Started
+
+### Install
+
+You may install the Jolt Framework with Composer (recommended) or manually.
+
+[Read how to install Jolt](http://joltframework.com/install).
+
 ### Quick and Basic
 A typical PHP app using Jolt will look like this.
 
