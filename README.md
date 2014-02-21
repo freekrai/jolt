@@ -13,6 +13,8 @@ For database, I recommend [Idiorm and Paris](http://j4mie.github.com/idiormandpa
 
 If you don't want to use Composer, then you can use the autoloader.
 
+If you're looking for the older version of Jolt, you can [find it here](https://github.com/freekrai/jolt/tree/legacy) in the legacy branch of the repo.
+
 ### Requirements
 
 * PHP 5.3
