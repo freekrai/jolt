@@ -51,6 +51,7 @@ class Jolt{
 	protected static $uri;
 	protected static $queryString;
 	private $request;
+	public $view;
 	private $datastore;
 	private $route_map = array(
 		'GET' => array(),
@@ -58,8 +59,12 @@ class Jolt{
 	);
 	
 	public function __construct($name='default',$debug = false){
+        $this->container = new \Jolt\Set();
 		$this->debug = $debug;
 		$this->request = new HttpRequest();
+		$this->view = new View();
+		$this->view->setApp( $this );
+
 		if (is_null(static::getInstance($name))) {
 			$this->setName($name);
 		}
@@ -427,29 +432,7 @@ class Jolt{
 		$locals['uri'] = $this->getBaseUri();
 		$locals['cpage'] = $this->getUri();
 		$locals['sitename'] = $this->option('site.name');
-		if (is_array($locals) && count($locals)) {
-			extract($locals, EXTR_SKIP);
-		}
-		if (($view_root = $this->option('views.root')) == null)
-			$this->error(500, "[views.root] is not set");
-		ob_start();
-		include "{$view_root}/{$view}.php";
-		$this->content(trim(ob_get_clean()));
-		if ($layout !== false) {
-			if ($layout == null) {
-				$layout = $this->option('views.layout');
-				$layout = ($layout == null) ? 'layout' : $layout;
-			}
-			$layout = "{$view_root}/{$layout}.php";	
-			header('Content-type: text/html; charset=utf-8');
-			$pageContent = $this->content();
-			ob_start();
-			require $layout;
-			echo trim(ob_get_clean());
-		} else {
-			//	no layout
-			echo $this->content();
-		}
+		$this->view->render($view,$locals,$layout);
 	}
 	public function json($obj, $code = 200) {
 		//	output a json stream
