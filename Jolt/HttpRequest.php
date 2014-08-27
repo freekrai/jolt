@@ -134,7 +134,7 @@ class HttpRequest{
 		return $this->headers;
 	}
 	public function getBody(){
-		return $this->env['jolt.input'];
+		return file_get_contents("php://input");
 	}
 	public function getContentType(){
 		return $this->headers->get('CONTENT_TYPE');
