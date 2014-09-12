@@ -280,6 +280,19 @@ class Jolt{
 	public function route($pattern,$cb = null,$conditions=null){	//	doesn't care about GET or POST...
 		return $this->add_route('GET',$pattern,$cb,$conditions);
 	}
+	public function route_group( $prefix,  $routes){
+		foreach( $routes as $path=>$route ){
+			$path = $prefix.$path;
+			if( $route['method'] == 'get'){
+				$this->get($path,$route['code']);
+			}elseif( $route['method'] == 'post'){
+				$this->post($path,$route['code']);
+			}else{
+				$this->route($path,$route['code']);
+			}
+		}
+	}
+	
 	public function get($pattern,$cb = null,$conditions=null){
 		if( $this->method('GET') ){	//	only process during GET
 			return $this->add_route('GET',$pattern,$cb,$conditions);
