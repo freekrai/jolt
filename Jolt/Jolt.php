@@ -281,8 +281,8 @@ class Jolt{
 		return $this->add_route('GET',$pattern,$cb,$conditions);
 	}
 	public function route_group( $prefix,  $routes){
-		foreach( $routes as $path=>$route ){
-			$path = $prefix.$path;
+		foreach( $routes as $route ){
+			$path = $prefix.$route['path'];
 			if( $route['method'] == 'get'){
 				$this->get($path,$route['code']);
 			}elseif( $route['method'] == 'post'){

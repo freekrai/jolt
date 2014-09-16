@@ -55,16 +55,20 @@ $app->get('/hello/:name', function ($name){
 });
 
 $app->route_group('/book',array(
-	'/first'=> array(
+	array(
+		'path'=>'/first', 
 		'method'=>'get',
 		'code'=>function() use ($app){
 			echo 'Hi!';
-	}),
-	'/second'=> array(
+		}
+	),
+	array(
+		'path'=>'/second',
 		'method'=>'get',
 		'code'=>function() use ($app){
 			echo 'Hi!';
-	})
+		}
+	)
 ));
 
 $app->get('/greet', function() use ($app){
