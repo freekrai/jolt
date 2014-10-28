@@ -308,6 +308,12 @@ class Jolt{
 			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
+	public function options($pattern,$cb = null,$conditions=null){
+		if( $this->method('OPTIONS') ){	//	only process during OPTIONS
+			return $this->add_route('GET',$pattern,$cb,$conditions);
+		}
+	}
+
 	public function delete($pattern,$cb = null,$conditions=null){
 		if( $this->method('DELETE') ){	//	only process during DELETE
 			return $this->add_route('GET',$pattern,$cb,$conditions);
