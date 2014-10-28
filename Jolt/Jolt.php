@@ -287,6 +287,12 @@ class Jolt{
 				$this->get($path,$route['code']);
 			}elseif( $route['method'] == 'post'){
 				$this->post($path,$route['code']);
+			}elseif( $route['method'] == 'put'){
+				$this->put($path,$route['code']);
+			}elseif( $route['method'] == 'options'){
+				$this->options($path,$route['code']);
+			}elseif( $route['method'] == 'delete'){
+				$this->delete($path,$route['code']);
 			}else{
 				$this->route($path,$route['code']);
 			}
