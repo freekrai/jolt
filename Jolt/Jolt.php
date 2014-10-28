@@ -289,8 +289,8 @@ class Jolt{
 				$this->post($path,$route['code']);
 			}elseif( $route['method'] == 'put'){
 				$this->put($path,$route['code']);
-			}elseif( $route['method'] == 'option'){
-				$this->option($path,$route['code']);
+			}elseif( $route['method'] == 'options'){
+				$this->options($path,$route['code']);
 			}elseif( $route['method'] == 'delete'){
 				$this->delete($path,$route['code']);
 			}else{
@@ -314,7 +314,7 @@ class Jolt{
 			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
 	}
-	public function option($pattern,$cb = null,$conditions=null){
+	public function options($pattern,$cb = null,$conditions=null){
 		if( $this->method('OPTIONS') ){	//	only process during OPTIONS
 			return $this->add_route('GET',$pattern,$cb,$conditions);
 		}
