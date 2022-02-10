@@ -17,7 +17,7 @@ If you're looking for the older version of Jolt, you can [find it here](https://
 
 ### Requirements
 
-* PHP 5.3
+* PHP 7+
 
 ## Getting Started
 
